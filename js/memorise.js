@@ -61,10 +61,9 @@ window.memoriseShowPhase3 = function () {
 
   container.innerHTML = `
     <div class="card"><strong>${currentVerse.reference}</strong></div>
-    <div id="inputContainer" style="position: relative; width: 100%; min-height: 5em; font-family: monospace; font-size: 1.2rem; line-height: 1.4; border: 1px solid #ccc; padding: 8px; box-sizing: border-box;">
-      <div id="ghostText" style="position: absolute; top: 8px; left: 8px; right: 8px; bottom: 8px; color: rgba(0,0,0,0.3); white-space: pre-wrap; word-wrap: break-word;"></div>
-      <textarea id="userInput" rows="3" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"
-        style="position: relative; background: transparent; color: transparent; caret-color: black; border: none; resize: none; width: 100%; height: 100%; overflow: hidden; font-family: monospace; font-size: 1.2rem; line-height: 1.4;"></textarea>
+    <div id="inputContainer">
+      <div id="ghostText"></div>
+      <textarea id="userInput" rows="3" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"></textarea>
     </div>
     <br/>
     <button onclick="window.evaluateInput()">Submit</button>
@@ -76,128 +75,115 @@ window.memoriseShowPhase3 = function () {
 
   const textarea = document.getElementById("userInput");
   const ghostText = document.getElementById("ghostText");
-
   const targetText = currentVerse.text;
   let userInput = "";
 
-  // Split target into words for first-letter mode completion
-  const targetWords = targetText.split(/(\s+)/); // keep spaces as tokens for spacing
+  // Split target preserving spaces/punctuation as tokens
+  const targetTokens = targetText.match(/(\S+|\s+)/g);
 
-  // Helper to rebuild ghostText with colored spans and auto-complete words if first-letter mode
   function renderGhostText() {
     ghostText.innerHTML = "";
+    // Split user input preserving spaces
+    const userTokens = userInput.match(/(\S+|\s+)/g) || [];
 
-    // Split user input by spaces
-    const userWords = userInput.split(/(\s+)/);
+    for (let i = 0; i < targetTokens.length; i++) {
+      const targetToken = targetTokens[i];
+      const userToken = userTokens[i] || "";
 
-    let wordIndex = 0;  // index in targetWords
-    let userWordIndex = 0;  // index in userWords
+      const span = document.createElement("span");
 
-    while (wordIndex < targetWords.length) {
-      const targetWord = targetWords[wordIndex];
-
-      // Spaces: just append as-is
-      if (/^\s+$/.test(targetWord)) {
-        const span = document.createElement("span");
-        span.textContent = targetWord;
-        ghostText.appendChild(span);
-        wordIndex++;
-        continue;
-      }
-
-      // Word processing
-      const userWord = userWords[userWordIndex] || "";
-
-      if (settings.mode === "first-letter") {
-        // If user typed first letter correct => complete whole word
-        if (userWord.length > 0 && userWord[0].toLowerCase() === targetWord[0].toLowerCase()) {
-          // show full word in black
-          appendColoredWord(targetWord, "black");
-        } else {
-          // show word faded
-          appendColoredWord(targetWord, "rgba(0,0,0,0.3)");
-        }
+      // If token is whitespace or punctuation
+      if (/^\s+$/.test(targetToken) || /^[^\w\s]+$/.test(targetToken)) {
+        span.textContent = targetToken;
+        span.style.color = "rgba(0,0,0,0.3)";
       } else {
-        // Normal mode: show letter by letter, highlight mistakes
-        for (let i = 0; i < targetWord.length; i++) {
-          const span = document.createElement("span");
-          const typedChar = userWord[i];
-          const targetChar = targetWord[i];
-          if (typedChar == null) {
-            span.textContent = targetChar;
-            span.style.color = "rgba(0,0,0,0.3)";
-          } else if (typedChar === targetChar) {
-            span.textContent = typedChar;
+        if (settings.mode === "first-letter") {
+          if (
+            userToken.length > 0 &&
+            userToken[0].toLowerCase() === targetToken[0].toLowerCase()
+          ) {
+            // Show full word in black if first letter matches
+            span.textContent = targetToken;
             span.style.color = "black";
           } else {
-            span.textContent = typedChar;
-            span.style.color = "red";
-            span.style.fontWeight = "bold";
+            span.textContent = targetToken;
+            span.style.color = "rgba(0,0,0,0.3)";
           }
-          ghostText.appendChild(span);
+        } else {
+          // Normal mode: letter by letter, highlight mistakes
+          let coloredText = "";
+          for (let j = 0; j < targetToken.length; j++) {
+            const typedChar = userToken[j];
+            const targetChar = targetToken[j];
+            if (typedChar == null) {
+              coloredText += `<span style="color: rgba(0,0,0,0.3)">${targetChar}</span>`;
+            } else if (typedChar === targetChar) {
+              coloredText += `<span style="color: black">${typedChar}</span>`;
+            } else {
+              coloredText += `<span style="color: red; font-weight: bold;">${typedChar}</span>`;
+            }
+          }
+          span.innerHTML = coloredText;
         }
       }
 
-      wordIndex++;
-      userWordIndex++;
+      ghostText.appendChild(span);
     }
   }
 
-  function appendColoredWord(word, color) {
-    const span = document.createElement("span");
-    span.textContent = word;
-    span.style.color = color;
-    ghostText.appendChild(span);
-  }
-
-  // Handle user input event
   textarea.addEventListener("input", (e) => {
-    userInput = e.target.value;
+    let val = e.target.value;
 
     if (settings.mode === "first-letter") {
-      // Auto complete logic:
-      // If user typed first letter correctly for a word, replace that word with full in input.
+      // Auto complete spaces and punctuation as user types
+      // Also, if first letter matches, autocomplete full word
 
-      let splitInput = userInput.split(/(\s+)/); // include spaces
+      const inputTokens = val.match(/(\S+|\s+)/g) || [];
 
-      for (let i = 0; i < splitInput.length; i++) {
-        if (/^\s+$/.test(splitInput[i])) continue; // skip spaces
+      for (let i = 0; i < inputTokens.length; i++) {
+        const token = inputTokens[i];
+        const targetToken = targetTokens[i];
 
-        const targetWord = targetWords[i];
-        const inputWord = splitInput[i];
+        if (!targetToken) continue;
 
+        // Auto-complete spaces and punctuation exactly
+        if (/^\s+$/.test(targetToken) || /^[^\w\s]+$/.test(targetToken)) {
+          if (token !== targetToken) {
+            inputTokens[i] = targetToken;
+          }
+          continue;
+        }
+
+        // Autocomplete full word if first letter typed correctly and only 1 letter typed
         if (
-          inputWord.length === 1 &&
-          targetWord &&
-          inputWord[0].toLowerCase() === targetWord[0].toLowerCase()
+          token.length === 1 &&
+          token[0].toLowerCase() === targetToken[0].toLowerCase()
         ) {
-          // Auto complete word in input
-          splitInput[i] = targetWord;
+          inputTokens[i] = targetToken;
         }
       }
 
-      const newInput = splitInput.join("");
-      if (newInput !== userInput) {
-        userInput = newInput;
-        textarea.value = newInput;
-        // Set cursor to end
-        textarea.selectionStart = textarea.selectionEnd = newInput.length;
+      const newVal = inputTokens.join("");
+      if (newVal !== val) {
+        val = newVal;
+        textarea.value = newVal;
+        // move cursor to end
+        textarea.selectionStart = textarea.selectionEnd = newVal.length;
       }
     }
 
+    userInput = val;
     renderGhostText();
   });
 
-  // Initialize
   textarea.value = "";
+  userInput = "";
   renderGhostText();
-
   textarea.focus();
 
   window._hintIndices = null;
   window._originalWords = null;
 };
-
 
 window.evaluateInput = function () {
   const textarea = document.getElementById("userInput");
