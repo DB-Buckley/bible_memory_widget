@@ -24,7 +24,6 @@ function showPhase1(container) {
   `;
 }
 
-// Expose showPhase1 globally for back button
 window.memoriseShowPhase1 = function () {
   const container = document.getElementById("memory-screen");
   showPhase1(container);
@@ -77,13 +76,11 @@ window.memoriseShowPhase3 = function () {
     <button onclick="window.memoriseShowPhase2()">⬅ Back</button>
   `;
 
-  // Auto-focus the textarea for better UX
   setTimeout(() => {
     const textarea = document.getElementById("userInput");
     if (textarea) textarea.focus();
   }, 100);
 
-  // Clear any previous hint data
   window._hintIndices = null;
   window._originalWords = null;
 };
@@ -92,7 +89,7 @@ window.showHint = function () {
   if (!currentVerse) return;
 
   const words = currentVerse.text.split(" ");
-  const totalToShow = Math.max(1, Math.floor(words.length * 0.3)); // show at least 1 word
+  const totalToShow = Math.max(1, Math.floor(words.length * 0.3));
   const indices = [];
 
   while (indices.length < totalToShow) {
@@ -106,7 +103,6 @@ window.showHint = function () {
   const textarea = document.getElementById("userInput");
   if (textarea) textarea.placeholder = hintText;
 
-  // Store revealed indices globally
   window._hintIndices = indices;
   window._originalWords = words;
 };
@@ -116,7 +112,7 @@ window.liveHintUpdate = function () {
   if (!textarea) return;
 
   const userInput = textarea.value.trim();
-  if (!userInput) return; // nothing typed yet
+  if (!userInput) return;
 
   const userInputWords = userInput.split(/\s+/);
   const settings = getSettings();
@@ -126,7 +122,6 @@ window.liveHintUpdate = function () {
   const displayWords = window._originalWords.map((word, i) => {
     if (userInputWords[i] === word) return word;
 
-    // If using first-letter mode and input starts with correct letter
     if (
       settings.mode === "first-letter" &&
       userInputWords[i] &&
@@ -147,7 +142,6 @@ window.evaluateInput = function () {
 
   const input = textarea.value.trim();
   const settings = getSettings();
-
   const expected = currentVerse.text.trim();
   const score = calculateScore(input, expected, settings.mode);
 
@@ -192,6 +186,7 @@ function generateFakeOptions(correctVerse) {
     .sort(() => 0.5 - Math.random())
     .slice(0, 2)
     .map((v) => v.text);
+
   const options = [correctVerse.text, ...wrongs];
   return options.sort(() => 0.5 - Math.random());
 }
