@@ -3,14 +3,14 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Bible Verse Memoriser</title>
+  <title>Bible Verse Typing Speed Tracker</title>
   <link rel="stylesheet" href="style.css" />
   <link rel="icon" href="data:,">
 </head>
 <body>
   <div id="app">
     <header>
-      <h1>📖 Bible Verse Memoriser</h1>
+      <h1>⌨️ Bible Typing Tracker</h1>
       <button onclick="toggleSettings()">⚙️ Settings</button>
     </header>
 
@@ -22,10 +22,10 @@
 
       <h3>📚 Your Verse List</h3>
       <div id="verseList"></div>
-      <button id="startBtn">Start Memorising ▶️</button>
+      <button id="startBtn">Start Typing ▶️</button>
     </section>
 
-    <!-- Memory Game Screen -->
+    <!-- Typing Practice Screen -->
     <section id="memory-screen" style="display: none;"></section>
 
     <!-- Settings Modal -->
@@ -45,7 +45,7 @@
         <option value="first-letter">First Letter Only</option>
       </select>
 
-      <label for="passScore">Pass Percentage:</label>
+      <label for="passScore">Target Accuracy:</label>
       <input type="number" id="passScore" min="50" max="100" value="90" />%
 
       <button id="saveSettingsBtn">💾 Save Settings</button>
@@ -64,9 +64,7 @@
       modal.style.display = modal.style.display === "none" ? "block" : "none";
     };
 
-    // Load saved settings or defaults
     const settings = getSettings();
-
     document.getElementById("translation").value = settings.translation || "WEB";
     document.getElementById("typingMode").value = settings.mode || "full";
     document.getElementById("passScore").value = settings.passThreshold || 90;
