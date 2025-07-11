@@ -20,14 +20,13 @@ const bookAbbreviations = {
   "2 Peter": "2PE", "1 John": "1JN", "2 John": "2JN", "3 John": "3JN", "Jude": "JUD", "Revelation": "REV"
 };
 
-// Default to ASV
 function getBibleId(code) {
   switch (code) {
     case 'ASV': return '685d1470fe4d5c3b-01';
     case 'KJV': return 'de4e12af7f28f599-01';
     case 'WEB': return '9879dbb7cfe39e4d-01';
     case 'LSV': return '01b29f4b342acc35-01';
-    default: return '685d1470fe4d5c3b-01'; // ASV fallback
+    default: return '685d1470fe4d5c3b-01'; // Fallback to ASV
   }
 }
 
@@ -35,13 +34,18 @@ export async function fetchVerse(reference, translation = 'ASV') {
   try {
     const bibleId = getBibleId(translation);
 
-    // Split reference into book + chapter:verse
-    const [bookPart, versePart] = reference.split(/(?<=\D)\s+/); // e.g. "John", "3:16"
-    const abbrev = bookAbbreviations[bookPart.trim()];
-    if (!abbrev) throw new Error(`Unknown book: ${bookPart}`);
+    // Normalize reference: e.g., "John 3:16"
+    const match = reference.match(/^(.+?)\s+(\d+):(\d+)$/);
+    if (!match) throw new Error(`Invalid reference format: "${reference}"`);
 
-    const [chapter, verse] = versePart.split(":");
-    const verseId = `${abbrev}.${chapter}.${verse}`; // e.g., JHN.3.16
+    const bookName = match[1].trim();
+    const chapter = match[2];
+    const verse = match[3];
+
+    const abbrev = bookAbbreviations[bookName];
+    if (!abbrev) throw new Error(`Unknown book: "${bookName}"`);
+
+    const verseId = `${abbrev}.${chapter}.${verse}`; // e.g. JHN.3.16
 
     const url = `${BASE_URL}/bibles/${bibleId}/verses/${verseId}?content-type=text&include-notes=false&include-titles=false&include-chapter-numbers=false&include-verse-numbers=false`;
 
@@ -65,5 +69,3 @@ export async function fetchVerse(reference, translation = 'ASV') {
     throw new Error(`Verse not found for "${reference}"`);
   }
 }
-
-
