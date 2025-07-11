@@ -11,6 +11,7 @@ function stripHtml(html) {
 }
 
 // Fetch and cache list of Bibles
+
 async function fetchBibles() {
   if (cachedBibles) return cachedBibles;
 
@@ -25,15 +26,19 @@ async function fetchBibles() {
 }
 
 // Find NLT Bible ID by searching cached Bibles
-async function getBibleId(versionName = 'NLT') {
-  if (cachedBibleId) return cachedBibleId;
+  const knownBibles = {
+  ASV: "685d1470fe4d5c3b-01",
+  KJV: "de4e12af7f28f599-01",
+  LSV: "01b29f4b342acc35-01",
+  WEB: "9879dbb7cfe39e4d-01"
+};
 
-  const bibles = await fetchBibles();
-
-  // Try to find exact match or partial match
-  const bible = bibles.find(b =>
-    b.name.toLowerCase().includes(versionName.toLowerCase())
-  );
+function getBibleId(translation) {
+  if (!knownBibles[translation]) {
+    throw new Error(`Bible version "${translation}" is not supported.`);
+  }
+  return knownBibles[translation];
+}
 
   if (!bible) throw new Error(`Bible version "${versionName}" not found.`);
 
