@@ -47,6 +47,60 @@ textarea {
   margin-top: 0.5rem;
 }
 
+/* --- NEW styles for memorisation input container --- */
+
+#inputContainer {
+  position: relative;
+  font-family: monospace; /* monospace for exact letter spacing */
+  font-size: 1.2rem;
+  line-height: 1.4;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  padding: 8px;
+  box-sizing: border-box;
+  min-height: 5em;
+  background-color: white;
+  overflow-wrap: break-word; /* handle long words */
+  white-space: pre-wrap; /* preserve spaces and line breaks */
+}
+
+/* Ghost text sits absolutely below textarea */
+#ghostText {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  right: 8px;
+  bottom: 8px;
+  pointer-events: none; /* ignore mouse events */
+  color: rgba(0, 0, 0, 0.3);
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  user-select: none;
+}
+
+/* Transparent textarea over the ghost text */
+#userInput {
+  position: relative;
+  background: transparent;
+  color: transparent; /* text invisible */
+  caret-color: black; /* caret visible */
+  border: none;
+  resize: none;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  font-family: monospace;
+  font-size: 1.2rem;
+  line-height: 1.4;
+  outline: none; /* no outline on focus */
+}
+
+/* Ensure punctuation and spaces are visible in ghost text by styling spans */
+#ghostText span {
+  white-space: pre;
+}
+
+/* Modal styles */
 .modal {
   background: #f2f2f2;
   padding: 1rem;
