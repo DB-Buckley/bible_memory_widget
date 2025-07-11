@@ -35,11 +35,15 @@ export async function fetchVerse(reference, translation = 'ASV') {
   try {
     const bibleId = getBibleId(translation);
 
-    const baseUrl = `https://api.scripture.api.bible/v1/bibles/${bibleId}/passages`;
-    // Encode spaces as %20 but leave colon unencoded
-    const referenceEncoded = reference.replace(/ /g, '%20');
+    // Split reference into book + chapter:verse
+    const [bookPart, versePart] = reference.split(/(?<=\D)\s+/); // e.g. "John", "3:16"
+    const abbrev = bookAbbreviations[bookPart.trim()];
+    if (!abbrev) throw new Error(`Unknown book: ${bookPart}`);
 
-    const url = `${baseUrl}?reference=${referenceEncoded}&content-type=text&include-notes=false&include-titles=false&include-chapter-numbers=false&include-verse-numbers=false`;
+    const [chapter, verse] = versePart.split(":");
+    const verseId = `${abbrev}.${chapter}.${verse}`; // e.g., JHN.3.16
+
+    const url = `${BASE_URL}/bibles/${bibleId}/verses/${verseId}?content-type=text&include-notes=false&include-titles=false&include-chapter-numbers=false&include-verse-numbers=false`;
 
     const response = await fetch(url, {
       headers: { 'api-key': API_KEY }
@@ -61,6 +65,5 @@ export async function fetchVerse(reference, translation = 'ASV') {
     throw new Error(`Verse not found for "${reference}"`);
   }
 }
-
 
 
