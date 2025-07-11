@@ -30,6 +30,12 @@ window.memoriseShowPhase2 = function () {
   const options = generateFakeOptions(currentVerse);
   container.innerHTML = `<div class="card"><strong>${currentVerse.reference}</strong></div>`;
 
+  const backBtn = document.createElement("button");
+  backBtn.innerText = "⬅ Back";
+  backBtn.onclick = () => showPhase1(container, null);
+  container.appendChild(backBtn);
+
+
   options.forEach((opt) => {
     const btn = document.createElement("button");
     btn.className = "card";
@@ -55,6 +61,10 @@ window.memoriseShowPhase3 = function () {
     <button onclick="window.evaluateInput()">Submit</button>
     <div id="result"></div>
   `;
+
+  container.innerHTML += `
+    <br/><button onclick="window.memoriseShowPhase2()">⬅ Back</button>`;
+
 };
 
 window.evaluateInput = function () {
