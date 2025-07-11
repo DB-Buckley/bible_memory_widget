@@ -3,7 +3,7 @@ const SETTINGS_KEY = 'bvm_user_settings';
 const defaultSettings = {
   mode: 'full',             // 'full' or 'first-letter'
   passThreshold: 90,        // % required to pass a verse
-  translation: 'NLT'        // Preferred Bible translation
+  translation: 'ASV'        // Preferred Bible translation
 };
 
 function loadSettings() {
