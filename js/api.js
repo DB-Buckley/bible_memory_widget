@@ -35,15 +35,20 @@ export async function fetchVerse(reference, translation = 'ASV') {
   try {
     const bibleId = getBibleId(translation);
 
-    const url = new URL(`https://api.scripture.api.bible/v1/bibles/${bibleId}/passages`);
-    url.searchParams.set('reference', reference);
-    url.searchParams.set('content-type', 'text');
-    url.searchParams.set('include-notes', 'false');
-    url.searchParams.set('include-titles', 'false');
-    url.searchParams.set('include-chapter-numbers', 'false');
-    url.searchParams.set('include-verse-numbers', 'false');
+    // Build URL manually (do not encode colon)
+    const baseUrl = `https://api.scripture.api.bible/v1/bibles/${bibleId}/passages`;
+    const params = new URLSearchParams({
+      reference: reference.replace(/%3A/g, ':'), // ensure colon present, not encoded
+      'content-type': 'text',
+      'include-notes': 'false',
+      'include-titles': 'false',
+      'include-chapter-numbers': 'false',
+      'include-verse-numbers': 'false'
+    });
 
-    const response = await fetch(url.toString(), {
+    const url = `${baseUrl}?${params.toString()}`;
+
+    const response = await fetch(url, {
       headers: {
         'api-key': API_KEY
       }
@@ -58,10 +63,11 @@ export async function fetchVerse(reference, translation = 'ASV') {
 
     return {
       reference: data.reference,
-      text: data.content.replace(/<\/?[^>]+(>|$)/g, "").trim() // Strip HTML tags
+      text: data.content.replace(/<\/?[^>]+(>|$)/g, "").trim() // strip HTML tags
     };
   } catch (err) {
     console.error("fetchVerse error:", err);
     throw new Error(`Verse not found for "${reference}"`);
   }
 }
+
