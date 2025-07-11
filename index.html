@@ -6,7 +6,6 @@
   <title>Bible Verse Memoriser</title>
   <link rel="stylesheet" href="style.css" />
   <link rel="icon" href="data:,">
-  
 </head>
 <body>
   <div id="app">
@@ -35,11 +34,10 @@
 
       <label for="translation">Bible Translation:</label>
       <select id="translation">
+        <option value="WEB">WEB</option>
         <option value="KJV">KJV</option>
         <option value="LSV">LSV</option>
-        <option value="WEB">WEB</option>
       </select>
-
 
       <label for="typingMode">Typing Mode:</label>
       <select id="typingMode">
@@ -66,8 +64,10 @@
       modal.style.display = modal.style.display === "none" ? "block" : "none";
     };
 
+    // Load saved settings or defaults
     const settings = getSettings();
-    document.getElementById("translation").value = settings.translation || "NLT";
+
+    document.getElementById("translation").value = settings.translation || "WEB";
     document.getElementById("typingMode").value = settings.mode || "full";
     document.getElementById("passScore").value = settings.passThreshold || 90;
 
