@@ -1,13 +1,18 @@
 const SETTINGS_KEY = 'bvm_user_settings';
 
-let defaultSettings = {
-  mode: 'full',         // 'full' or 'first-letter'
-  passThreshold: 90     // percentage
+const defaultSettings = {
+  mode: 'full',             // 'full' or 'first-letter'
+  passThreshold: 90,        // % required to pass a verse
+  translation: 'NLT'        // Preferred Bible translation
 };
 
 function loadSettings() {
   const raw = localStorage.getItem(SETTINGS_KEY);
-  return raw ? JSON.parse(raw) : defaultSettings;
+  if (!raw) return defaultSettings;
+
+  const parsed = JSON.parse(raw);
+  // Ensure all default keys are present (for backward compatibility)
+  return { ...defaultSettings, ...parsed };
 }
 
 function saveSettings(settings) {
