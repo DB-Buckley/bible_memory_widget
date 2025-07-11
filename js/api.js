@@ -34,7 +34,16 @@ function getBibleId(code) {
 export async function fetchVerse(reference, translation = 'ASV') {
   try {
     const bibleId = getBibleId(translation);
-    const response = await fetch(`https://api.scripture.api.bible/v1/bibles/${bibleId}/passages?reference=${encodeURIComponent(reference)}&content-type=text&include-notes=false&include-titles=false&include-chapter-numbers=false&include-verse-numbers=false`, {
+
+    const url = new URL(`https://api.scripture.api.bible/v1/bibles/${bibleId}/passages`);
+    url.searchParams.set('reference', reference);
+    url.searchParams.set('content-type', 'text');
+    url.searchParams.set('include-notes', 'false');
+    url.searchParams.set('include-titles', 'false');
+    url.searchParams.set('include-chapter-numbers', 'false');
+    url.searchParams.set('include-verse-numbers', 'false');
+
+    const response = await fetch(url.toString(), {
       headers: {
         'api-key': API_KEY
       }
@@ -49,7 +58,7 @@ export async function fetchVerse(reference, translation = 'ASV') {
 
     return {
       reference: data.reference,
-      text: data.content.replace(/<\/?[^>]+(>|$)/g, "").trim() // remove any HTML tags
+      text: data.content.replace(/<\/?[^>]+(>|$)/g, "").trim() // Strip HTML tags
     };
   } catch (err) {
     console.error("fetchVerse error:", err);
