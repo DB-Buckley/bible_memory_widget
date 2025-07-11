@@ -61,13 +61,17 @@ window.memoriseShowPhase3 = function () {
 
   container.innerHTML = `
     <div class="card"><strong>${currentVerse.reference}</strong></div>
-    <textarea
+    <div id="ghostText" style="font-family: monospace; font-size: 1.2rem; line-height: 1.4; margin-bottom: 1em; user-select:none;"></div>
+    <input
       id="userInput"
-      placeholder="Type the verse here..."
-      oninput="window.liveHintUpdate()"
-      rows="5"
-      style="width: 100%; box-sizing: border-box;"
-    ></textarea>
+      type="text"
+      autocomplete="off"
+      autocorrect="off"
+      autocapitalize="off"
+      spellcheck="false"
+      style="width: 100%; padding: 8px; font-size: 1.1rem; font-family: monospace; box-sizing: border-box;"
+      placeholder="Start typing the verse here..."
+    />
     <br/>
     <button onclick="window.evaluateInput()">Submit</button>
     <button onclick="window.showHint()">💡 Hint</button>
@@ -76,64 +80,52 @@ window.memoriseShowPhase3 = function () {
     <button onclick="window.memoriseShowPhase2()">⬅ Back</button>
   `;
 
-  setTimeout(() => {
-    const textarea = document.getElementById("userInput");
-    if (textarea) textarea.focus();
-  }, 100);
+  const input = document.getElementById("userInput");
+  const ghostText = document.getElementById("ghostText");
+
+  let currentInput = "";
+
+  // Render ghost text with typed chars replacing placeholders
+  function renderGhostText() {
+    ghostText.innerHTML = "";
+    const target = currentVerse.text;
+
+    for (let i = 0; i < target.length; i++) {
+      const span = document.createElement("span");
+      const typedChar = currentInput[i];
+      const targetChar = target[i];
+
+      if (typedChar == null) {
+        // Not typed yet: show faded char
+        span.textContent = targetChar;
+        span.style.opacity = "0.3";
+      } else {
+        span.textContent = typedChar;
+        if (typedChar === targetChar) {
+          span.style.color = "#000";
+        } else {
+          span.style.color = "red";
+          span.style.fontWeight = "bold";
+        }
+      }
+      ghostText.appendChild(span);
+    }
+  }
+
+  // Update input handler
+  input.addEventListener("input", (e) => {
+    currentInput = e.target.value;
+    renderGhostText();
+  });
+
+  // Focus input
+  setTimeout(() => input.focus(), 100);
+
+  // Initialize ghost text
+  renderGhostText();
 
   window._hintIndices = null;
   window._originalWords = null;
-};
-
-window.showHint = function () {
-  if (!currentVerse) return;
-
-  const words = currentVerse.text.split(" ");
-  const totalToShow = Math.max(1, Math.floor(words.length * 0.3));
-  const indices = [];
-
-  while (indices.length < totalToShow) {
-    const idx = Math.floor(Math.random() * words.length);
-    if (!indices.includes(idx)) indices.push(idx);
-  }
-
-  const hintWords = words.map((word, i) => (indices.includes(i) ? word : "_____"));
-  const hintText = hintWords.join(" ");
-
-  const textarea = document.getElementById("userInput");
-  if (textarea) textarea.placeholder = hintText;
-
-  window._hintIndices = indices;
-  window._originalWords = words;
-};
-
-window.liveHintUpdate = function () {
-  const textarea = document.getElementById("userInput");
-  if (!textarea) return;
-
-  const userInput = textarea.value.trim();
-  if (!userInput) return;
-
-  const userInputWords = userInput.split(/\s+/);
-  const settings = getSettings();
-
-  if (!window._hintIndices || !window._originalWords) return;
-
-  const displayWords = window._originalWords.map((word, i) => {
-    if (userInputWords[i] === word) return word;
-
-    if (
-      settings.mode === "first-letter" &&
-      userInputWords[i] &&
-      word.toLowerCase().startsWith(userInputWords[i][0].toLowerCase())
-    ) {
-      return word;
-    }
-
-    return window._hintIndices.includes(i) ? word : "_____";
-  });
-
-  textarea.placeholder = displayWords.join(" ");
 };
 
 window.evaluateInput = function () {
