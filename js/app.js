@@ -1,13 +1,15 @@
 import { addVerse, getAllVerses, deleteVerse } from './verses.js';
 import { getSettings, updateSettings } from './settings.js';
-import { startMemorisationFlow } from './memorise.js';
+import { startTypingPractice } from './memorise.js'; // 🆕 Renamed import
 
 window.onload = () => {
   document.getElementById("addVerseBtn").onclick = handleAddVerse;
+
   document.getElementById("startBtn").onclick = () => {
     toggleScreen("memory-screen");
-    startMemorisationFlow("memory-screen");
+    startTypingPractice("memory-screen"); // 🆕 Start typing widget
   };
+
   document.getElementById("saveSettingsBtn").onclick = () => {
     updateSettings({
       mode: document.getElementById("typingMode").value,
