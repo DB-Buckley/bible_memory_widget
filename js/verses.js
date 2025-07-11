@@ -9,7 +9,6 @@ function loadVerses() {
   const saved = localStorage.getItem(STORAGE_KEY);
   if (saved) return JSON.parse(saved);
 
-  // Preload if no saved verses exist
   const defaultVerses = [
     {
       reference: "Romans 12:2",
@@ -33,12 +32,13 @@ function saveVerses() {
 }
 
 export async function addVerse(reference, text = null) {
-  if (verses.some(v => v.reference.toLowerCase() === reference.toLowerCase())) {
+  const normalizedRef = reference.trim().toLowerCase();
+  if (verses.some(v => v.reference.toLowerCase() === normalizedRef)) {
     return { success: false, message: "Verse already exists" };
   }
 
   if (!text) {
-    const { translation } = getSettings(); // 🔁 Use selected translation
+    const { translation } = getSettings();
     const result = await fetchVerse(reference, translation);
     if (!result) return { success: false, message: "Could not fetch verse" };
     text = result.text;
