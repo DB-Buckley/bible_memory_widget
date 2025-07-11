@@ -1,5 +1,5 @@
 export async function fetchVerse(reference) {
-  const url = `https://bible-api.com/${encodeURIComponent(reference)}?translation=kjv`;
+  const url = `https://bible-api.com/${encodeURIComponent(reference)}?translation=nlt`;
   try {
     const res = await fetch(url);
     const data = await res.json();
