@@ -31,40 +31,28 @@ function getBibleId(code) {
   }
 }
 
-export async function fetchVerse(reference) {
+export async function fetchVerse(reference, translation = 'ASV') {
   try {
-    const settings = getSettings();
-    const bibleId = getBibleId(settings.translation || 'ASV');
-
-    const match = reference.match(/^([\d]?\s?[A-Za-z\s]+)\s+(\d+):(\d+)$/);
-    if (!match) throw new Error(`Invalid format for "${reference}"`);
-
-    let [_, book, chapter, verse] = match;
-    book = book.trim();
-    const bookId = bookAbbreviations[book];
-    if (!bookId) throw new Error(`Unknown book: "${book}"`);
-
-    const verseId = `${bookId}.${chapter}.${verse}`;
-
-    const url = `${BASE_URL}/bibles/${bibleId}/verses/${verseId}?include-chapter-numbers=false&include-verse-numbers=false`;
-
-    const response = await fetch(url, {
-      headers: { 'api-key': API_KEY }
+    const bibleId = getBibleId(translation);
+    const response = await fetch(`https://api.scripture.api.bible/v1/bibles/${bibleId}/passages?reference=${encodeURIComponent(reference)}&content-type=text&include-notes=false&include-titles=false&include-chapter-numbers=false&include-verse-numbers=false`, {
+      headers: {
+        'api-key': API_KEY
+      }
     });
 
     if (!response.ok) {
-      throw new Error(`Verse not found for "${reference}"`);
+      throw new Error(`Failed to fetch: ${response.status}`);
     }
 
-    const data = await response.json();
-    const cleanText = data?.data?.content?.replace(/<[^>]+>/g, '').trim();
+    const json = await response.json();
+    const data = json.data;
 
     return {
-      reference: `${book} ${chapter}:${verse}`,
-      text: cleanText
+      reference: data.reference,
+      text: data.content.replace(/<\/?[^>]+(>|$)/g, "").trim() // remove any HTML tags
     };
   } catch (err) {
     console.error("fetchVerse error:", err);
-    return null;
+    throw new Error(`Verse not found for "${reference}"`);
   }
 }
