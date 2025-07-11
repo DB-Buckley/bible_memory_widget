@@ -2,13 +2,13 @@ import { fetchVerse } from './api.js';
 import { getSettings } from './settings.js';
 
 const STORAGE_KEY = 'bvm_user_verses';
-
 let verses = loadVerses();
 
 function loadVerses() {
   const saved = localStorage.getItem(STORAGE_KEY);
   if (saved) return JSON.parse(saved);
 
+  // Default seed verses
   const defaultVerses = [
     {
       reference: "Romans 12:2",
@@ -23,6 +23,7 @@ function loadVerses() {
       text: "Trust in the Lord with all your heart; do not depend on your own understanding."
     }
   ];
+
   localStorage.setItem(STORAGE_KEY, JSON.stringify(defaultVerses));
   return defaultVerses;
 }
@@ -33,21 +34,32 @@ function saveVerses() {
 
 export async function addVerse(reference, text = null) {
   const normalizedRef = reference.trim().toLowerCase();
+
   if (verses.some(v => v.reference.toLowerCase() === normalizedRef)) {
     return { success: false, message: "Verse already exists" };
   }
 
-  if (!text) {
-    const { translation } = getSettings();
-    const result = await fetchVerse(reference, translation);
-    if (!result) return { success: false, message: "Could not fetch verse" };
-    text = result.text;
-    reference = result.reference;
-  }
+  try {
+    if (!text) {
+      const { translation } = getSettings();
+      const result = await fetchVerse(reference, translation);
 
-  verses.push({ reference, text });
-  saveVerses();
-  return { success: true };
+      if (!result || !result.text) {
+        return { success: false, message: "Could not fetch verse" };
+      }
+
+      text = result.text;
+      reference = result.reference;
+    }
+
+    verses.push({ reference, text });
+    saveVerses();
+
+    return { success: true };
+  } catch (err) {
+    console.error("addVerse error:", err);
+    return { success: false, message: err.message || "Unknown error" };
+  }
 }
 
 export function getAllVerses() {
@@ -55,12 +67,14 @@ export function getAllVerses() {
 }
 
 export function deleteVerse(reference) {
-  verses = verses.filter(v => v.reference.toLowerCase() !== reference.toLowerCase());
+  const normalized = reference.toLowerCase();
+  verses = verses.filter(v => v.reference.toLowerCase() !== normalized);
   saveVerses();
 }
 
 export function getVerse(reference) {
-  return verses.find(v => v.reference.toLowerCase() === reference.toLowerCase());
+  const normalized = reference.toLowerCase();
+  return verses.find(v => v.reference.toLowerCase() === normalized);
 }
 
 export function clearAllVerses() {
