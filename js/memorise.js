@@ -61,17 +61,11 @@ window.memoriseShowPhase3 = function () {
 
   container.innerHTML = `
     <div class="card"><strong>${currentVerse.reference}</strong></div>
-    <div id="ghostText" style="font-family: monospace; font-size: 1.2rem; line-height: 1.4; margin-bottom: 1em; user-select:none;"></div>
-    <input
-      id="userInput"
-      type="text"
-      autocomplete="off"
-      autocorrect="off"
-      autocapitalize="off"
-      spellcheck="false"
-      style="width: 100%; padding: 8px; font-size: 1.1rem; font-family: monospace; box-sizing: border-box;"
-      placeholder="Start typing the verse here..."
-    />
+    <div id="inputContainer" style="position: relative; width: 100%; min-height: 5em; font-family: monospace; font-size: 1.2rem; line-height: 1.4; border: 1px solid #ccc; padding: 8px; box-sizing: border-box;">
+      <div id="ghostText" style="position: absolute; top: 8px; left: 8px; right: 8px; bottom: 8px; color: rgba(0,0,0,0.3); white-space: pre-wrap; word-wrap: break-word;"></div>
+      <textarea id="userInput" rows="3" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"
+        style="position: relative; background: transparent; color: transparent; caret-color: black; border: none; resize: none; width: 100%; height: 100%; overflow: hidden; font-family: monospace; font-size: 1.2rem; line-height: 1.4;"></textarea>
+    </div>
     <br/>
     <button onclick="window.evaluateInput()">Submit</button>
     <button onclick="window.showHint()">💡 Hint</button>
@@ -80,53 +74,130 @@ window.memoriseShowPhase3 = function () {
     <button onclick="window.memoriseShowPhase2()">⬅ Back</button>
   `;
 
-  const input = document.getElementById("userInput");
+  const textarea = document.getElementById("userInput");
   const ghostText = document.getElementById("ghostText");
 
-  let currentInput = "";
+  const targetText = currentVerse.text;
+  let userInput = "";
 
-  // Render ghost text with typed chars replacing placeholders
+  // Split target into words for first-letter mode completion
+  const targetWords = targetText.split(/(\s+)/); // keep spaces as tokens for spacing
+
+  // Helper to rebuild ghostText with colored spans and auto-complete words if first-letter mode
   function renderGhostText() {
     ghostText.innerHTML = "";
-    const target = currentVerse.text;
 
-    for (let i = 0; i < target.length; i++) {
-      const span = document.createElement("span");
-      const typedChar = currentInput[i];
-      const targetChar = target[i];
+    // Split user input by spaces
+    const userWords = userInput.split(/(\s+)/);
 
-      if (typedChar == null) {
-        // Not typed yet: show faded char
-        span.textContent = targetChar;
-        span.style.opacity = "0.3";
-      } else {
-        span.textContent = typedChar;
-        if (typedChar === targetChar) {
-          span.style.color = "#000";
+    let wordIndex = 0;  // index in targetWords
+    let userWordIndex = 0;  // index in userWords
+
+    while (wordIndex < targetWords.length) {
+      const targetWord = targetWords[wordIndex];
+
+      // Spaces: just append as-is
+      if (/^\s+$/.test(targetWord)) {
+        const span = document.createElement("span");
+        span.textContent = targetWord;
+        ghostText.appendChild(span);
+        wordIndex++;
+        continue;
+      }
+
+      // Word processing
+      const userWord = userWords[userWordIndex] || "";
+
+      if (settings.mode === "first-letter") {
+        // If user typed first letter correct => complete whole word
+        if (userWord.length > 0 && userWord[0].toLowerCase() === targetWord[0].toLowerCase()) {
+          // show full word in black
+          appendColoredWord(targetWord, "black");
         } else {
-          span.style.color = "red";
-          span.style.fontWeight = "bold";
+          // show word faded
+          appendColoredWord(targetWord, "rgba(0,0,0,0.3)");
+        }
+      } else {
+        // Normal mode: show letter by letter, highlight mistakes
+        for (let i = 0; i < targetWord.length; i++) {
+          const span = document.createElement("span");
+          const typedChar = userWord[i];
+          const targetChar = targetWord[i];
+          if (typedChar == null) {
+            span.textContent = targetChar;
+            span.style.color = "rgba(0,0,0,0.3)";
+          } else if (typedChar === targetChar) {
+            span.textContent = typedChar;
+            span.style.color = "black";
+          } else {
+            span.textContent = typedChar;
+            span.style.color = "red";
+            span.style.fontWeight = "bold";
+          }
+          ghostText.appendChild(span);
         }
       }
-      ghostText.appendChild(span);
+
+      wordIndex++;
+      userWordIndex++;
     }
   }
 
-  // Update input handler
-  input.addEventListener("input", (e) => {
-    currentInput = e.target.value;
+  function appendColoredWord(word, color) {
+    const span = document.createElement("span");
+    span.textContent = word;
+    span.style.color = color;
+    ghostText.appendChild(span);
+  }
+
+  // Handle user input event
+  textarea.addEventListener("input", (e) => {
+    userInput = e.target.value;
+
+    if (settings.mode === "first-letter") {
+      // Auto complete logic:
+      // If user typed first letter correctly for a word, replace that word with full in input.
+
+      let splitInput = userInput.split(/(\s+)/); // include spaces
+
+      for (let i = 0; i < splitInput.length; i++) {
+        if (/^\s+$/.test(splitInput[i])) continue; // skip spaces
+
+        const targetWord = targetWords[i];
+        const inputWord = splitInput[i];
+
+        if (
+          inputWord.length === 1 &&
+          targetWord &&
+          inputWord[0].toLowerCase() === targetWord[0].toLowerCase()
+        ) {
+          // Auto complete word in input
+          splitInput[i] = targetWord;
+        }
+      }
+
+      const newInput = splitInput.join("");
+      if (newInput !== userInput) {
+        userInput = newInput;
+        textarea.value = newInput;
+        // Set cursor to end
+        textarea.selectionStart = textarea.selectionEnd = newInput.length;
+      }
+    }
+
     renderGhostText();
   });
 
-  // Focus input
-  setTimeout(() => input.focus(), 100);
-
-  // Initialize ghost text
+  // Initialize
+  textarea.value = "";
   renderGhostText();
+
+  textarea.focus();
 
   window._hintIndices = null;
   window._originalWords = null;
 };
+
 
 window.evaluateInput = function () {
   const textarea = document.getElementById("userInput");
