@@ -3,7 +3,7 @@ import { getSettings } from './settings.js';
 
 let currentVerse = null;
 
-export function startMemorisationFlow(containerId, onComplete) {
+export function startMemorisationFlow(containerId) {
   const container = document.getElementById(containerId);
   const verses = getAllVerses();
 
@@ -13,16 +13,22 @@ export function startMemorisationFlow(containerId, onComplete) {
   }
 
   currentVerse = verses[Math.floor(Math.random() * verses.length)];
-  showPhase1(container, onComplete);
+  showPhase1(container);
 }
 
-function showPhase1(container, onComplete) {
+function showPhase1(container) {
   container.innerHTML = `
     <div class="card"><strong>${currentVerse.reference}</strong></div>
     <div class="card">${currentVerse.text}</div>
     <button onclick="window.memoriseShowPhase2()">Next</button>
   `;
 }
+
+// Expose showPhase1 globally for back button
+window.memoriseShowPhase1 = function () {
+  const container = document.getElementById("memory-screen");
+  showPhase1(container);
+};
 
 window.memoriseShowPhase2 = function () {
   const container = document.getElementById("memory-screen");
@@ -32,9 +38,8 @@ window.memoriseShowPhase2 = function () {
 
   const backBtn = document.createElement("button");
   backBtn.innerText = "⬅ Back";
-  backBtn.onclick = () => showPhase1(container, null);
+  backBtn.onclick = () => window.memoriseShowPhase1();
   container.appendChild(backBtn);
-
 
   options.forEach((opt) => {
     const btn = document.createElement("button");
@@ -57,24 +62,98 @@ window.memoriseShowPhase3 = function () {
 
   container.innerHTML = `
     <div class="card"><strong>${currentVerse.reference}</strong></div>
-    <textarea id="userInput" placeholder="Type the verse here..."></textarea>
+    <textarea
+      id="userInput"
+      placeholder="Type the verse here..."
+      oninput="window.liveHintUpdate()"
+      rows="5"
+      style="width: 100%; box-sizing: border-box;"
+    ></textarea>
+    <br/>
     <button onclick="window.evaluateInput()">Submit</button>
-    <div id="result"></div>
+    <button onclick="window.showHint()">💡 Hint</button>
+    <div id="result" style="margin-top: 1em;"></div>
+    <br/>
+    <button onclick="window.memoriseShowPhase2()">⬅ Back</button>
   `;
 
-  container.innerHTML += `
-    <br/><button onclick="window.memoriseShowPhase2()">⬅ Back</button>`;
+  // Auto-focus the textarea for better UX
+  setTimeout(() => {
+    const textarea = document.getElementById("userInput");
+    if (textarea) textarea.focus();
+  }, 100);
 
+  // Clear any previous hint data
+  window._hintIndices = null;
+  window._originalWords = null;
+};
+
+window.showHint = function () {
+  if (!currentVerse) return;
+
+  const words = currentVerse.text.split(" ");
+  const totalToShow = Math.max(1, Math.floor(words.length * 0.3)); // show at least 1 word
+  const indices = [];
+
+  while (indices.length < totalToShow) {
+    const idx = Math.floor(Math.random() * words.length);
+    if (!indices.includes(idx)) indices.push(idx);
+  }
+
+  const hintWords = words.map((word, i) => (indices.includes(i) ? word : "_____"));
+  const hintText = hintWords.join(" ");
+
+  const textarea = document.getElementById("userInput");
+  if (textarea) textarea.placeholder = hintText;
+
+  // Store revealed indices globally
+  window._hintIndices = indices;
+  window._originalWords = words;
+};
+
+window.liveHintUpdate = function () {
+  const textarea = document.getElementById("userInput");
+  if (!textarea) return;
+
+  const userInput = textarea.value.trim();
+  if (!userInput) return; // nothing typed yet
+
+  const userInputWords = userInput.split(/\s+/);
+  const settings = getSettings();
+
+  if (!window._hintIndices || !window._originalWords) return;
+
+  const displayWords = window._originalWords.map((word, i) => {
+    if (userInputWords[i] === word) return word;
+
+    // If using first-letter mode and input starts with correct letter
+    if (
+      settings.mode === "first-letter" &&
+      userInputWords[i] &&
+      word.toLowerCase().startsWith(userInputWords[i][0].toLowerCase())
+    ) {
+      return word;
+    }
+
+    return window._hintIndices.includes(i) ? word : "_____";
+  });
+
+  textarea.placeholder = displayWords.join(" ");
 };
 
 window.evaluateInput = function () {
-  const input = document.getElementById("userInput").value.trim();
+  const textarea = document.getElementById("userInput");
+  if (!textarea) return;
+
+  const input = textarea.value.trim();
   const settings = getSettings();
 
   const expected = currentVerse.text.trim();
   const score = calculateScore(input, expected, settings.mode);
 
   const resultBox = document.getElementById("result");
+  if (!resultBox) return;
+
   resultBox.innerHTML = `You scored <strong>${score}%</strong>`;
 
   if (score >= settings.passThreshold) {
@@ -85,9 +164,15 @@ window.evaluateInput = function () {
 };
 
 function calculateScore(input, expected, mode) {
-  if (mode === 'first-letter') {
-    input = input.split(/\s+/).map(w => w[0] || "").join("");
-    expected = expected.split(/\s+/).map(w => w[0] || "").join("");
+  if (mode === "first-letter") {
+    input = input
+      .split(/\s+/)
+      .map((w) => (w.length > 0 ? w[0] : ""))
+      .join("");
+    expected = expected
+      .split(/\s+/)
+      .map((w) => (w.length > 0 ? w[0] : ""))
+      .join("");
   }
 
   let correct = 0;
@@ -100,8 +185,13 @@ function calculateScore(input, expected, mode) {
 }
 
 function generateFakeOptions(correctVerse) {
-  const all = getAllVerses().filter(v => v.reference !== correctVerse.reference);
-  const wrongs = all.sort(() => 0.5 - Math.random()).slice(0, 2).map(v => v.text);
+  const all = getAllVerses().filter(
+    (v) => v.reference.toLowerCase() !== correctVerse.reference.toLowerCase()
+  );
+  const wrongs = all
+    .sort(() => 0.5 - Math.random())
+    .slice(0, 2)
+    .map((v) => v.text);
   const options = [correctVerse.text, ...wrongs];
   return options.sort(() => 0.5 - Math.random());
 }
