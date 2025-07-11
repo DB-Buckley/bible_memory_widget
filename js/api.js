@@ -22,15 +22,14 @@ const bookAbbreviations = {
 
 function getBibleId(code) {
   switch (code) {
-    case 'ASV': return '685d1470fe4d5c3b-01';
     case 'KJV': return 'de4e12af7f28f599-01';
     case 'WEB': return '9879dbb7cfe39e4d-01';
     case 'LSV': return '01b29f4b342acc35-01';
-    default: return '685d1470fe4d5c3b-01'; // Fallback to ASV
+    default: return '9879dbb7cfe39e4d-01'; // Fallback to ASV
   }
 }
 
-export async function fetchVerse(reference, translation = 'ASV') {
+export async function fetchVerse(reference, translation = 'WEB') {
   try {
     const bibleId = getBibleId(translation);
 
