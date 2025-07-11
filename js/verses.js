@@ -18,18 +18,15 @@ function loadVerses() {
   return defaultVerses;
 }
 
-
 function saveVerses() {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(verses));
 }
 
 export async function addVerse(reference, text = null) {
-  // Avoid duplicates
   if (verses.some(v => v.reference.toLowerCase() === reference.toLowerCase())) {
     return { success: false, message: "Verse already exists" };
   }
 
-  // Fetch if no text given
   if (!text) {
     const result = await fetchVerse(reference);
     if (!result) return { success: false, message: "Could not fetch verse" };
